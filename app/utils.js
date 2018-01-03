@@ -34,7 +34,7 @@ let logger = (log, type) => {
         cons(info + '    ' + log)
         data = Buffer.from(info + '    ' + log + '\n')
     }
-    let log_path = __dirname + '/storage/logs/' + timestamp(null, true) + '.txt'
+    let log_path = __dirname + '/storage/logs/' + timestamp(null, true) + '.log'
     if (fs.existsSync(log_path))
         fs.appendFileSync(log_path, data)
     else
