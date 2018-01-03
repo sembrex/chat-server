@@ -1,7 +1,8 @@
 let path = require('path')
 let crypto = require('crypto')
+let fs = require('fs')
 
-let timestamp = (date) => {
+let timestamp = (date, notime) => {
     date = date || new Date()
 
     let year = date.getFullYear(),
@@ -17,18 +18,27 @@ let timestamp = (date) => {
     minute = minute > 9 ? minute : '0' + minute
     second = second > 9 ? second : '0' + second
 
-    return [year, month, day].join('-') + ' ' + [hour, minute, second].join(':')
+    return [year, month, day].join('-') + (notime ? '' : ' ' + [hour, minute, second].join(':'))
 }
 
 let logger = (log, type) => {
     type = type || 'I'
     cons = type == 'E' ? console.error : console.log
     let info = timestamp() + '  ' + type
+    let data
     if (typeof log == 'object') {
         cons(info)
         cons(log)
-    } else
+        data = Buffer.from([info, log, '\n'])
+    } else {
         cons(info + '    ' + log)
+        data = Buffer.from(info + '    ' + log + '\n')
+    }
+    let log_path = __dirname + '/storage/logs/' + timestamp(null, true) + '.txt'
+    if (fs.existsSync(log_path))
+        fs.appendFileSync(log_path, data)
+    else
+        fs.writeFileSync(log_path, data)
 }
 
 let Hash = {

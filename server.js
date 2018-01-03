@@ -6,10 +6,12 @@ let io = require('socket.io')(server)
 let {logger, timestamp} = require('./app/utils')
 
 server.listen(9090, () => {
+    logger('NODE_ENV = ' + process.env.NODE_ENV)
     logger('Listening on port *:9090')
 })
 
 app.use(express.static('public'))
+app.set('view engine', 'pug')
 require('./app/routes')(app)
 
 let chatRooms = {}

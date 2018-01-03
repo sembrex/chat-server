@@ -1,5 +1,5 @@
 let knex = require('knex')(require('../../knexfile'))
-let utils = require('../utils')
+let {logger, public_path} = require('../utils')
 let Jimp = require('jimp')
 let fs = require('fs')
 
@@ -49,7 +49,7 @@ module.exports = class User {
                 new User(user, callback)
             })
             .catch(err => {
-                utils.logger(err, 'E')
+                logger(err, 'E')
                 if (typeof callback == 'function')
                     callback(null, err)
             })
@@ -70,7 +70,7 @@ module.exports = class User {
             if (data.avatar) {
                 return this.processAvatar(data.avatar, data.username, (avatar, err) => {
                     if (err) {
-                        utils.logger(err, 'E')
+                        logger(err, 'E')
                         return createUser(user)
                     }
 
@@ -116,7 +116,7 @@ module.exports = class User {
             if (data.avatar) {
                 return User.processAvatar(data.avatar, this.username, (avatar, err) => {
                     if (err) {
-                        utils.logger(err, 'E')
+                        logger(err, 'E')
                         return updateUser(user)
                     }
 
@@ -170,7 +170,7 @@ module.exports = class User {
                             .from('file_managers')
                             .where('id', this.avatar_id)
                             .then(() => {
-                                fs.unlinkSync(utils.public_path(this.avatar.substring(1)))
+                                fs.unlinkSync(public_path(this.avatar.substring(1)))
                             })
                     }
                 })
@@ -194,7 +194,7 @@ module.exports = class User {
             }
 
             let img_path = 'images/avatar/' + username + '.' + img.getExtension()
-            let save_path = utils.public_path(img_path)
+            let save_path = public_path(img_path)
             if (fs.existsSync(save_path))
                 fs.unlinkSync(save_path)
             img.write(save_path)

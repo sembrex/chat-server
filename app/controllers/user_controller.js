@@ -1,5 +1,5 @@
 const knex = require('knex')(require('../../knexfile'))
-let utils = require('../utils')
+let {logger, Hash} = require('../utils')
 let User = require('../models/User')
 
 let validate = (params, rules) => {
@@ -49,7 +49,7 @@ module.exports = {
 
         let data = {
             username: req.body.username,
-            password: utils.Hash.make(req.body.password)
+            password: Hash.make(req.body.password)
         }
 
         if (req.files) {
@@ -89,7 +89,7 @@ module.exports = {
                 data.username = req.body.username
 
             if (req.body.password)
-                data.password = utils.Hash.make(req.body.password)
+                data.password = Hash.make(req.body.password)
 
             if (req.files) {
                 req.files.forEach(file => {
