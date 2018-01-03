@@ -1,34 +1,16 @@
-let app = require('express')()
+let express = require('express')
+let app = express()
 let server = require('http').createServer(app)
 let io = require('socket.io')(server)
 
-let timestamp = (date) => {
-    date = date || new Date()
-
-    let year = date.getFullYear(),
-        month = date.getMonth() + 1,
-        day = date.getDay(),
-        hour = date.getHours(),
-        minute = date.getMinutes(),
-        second = date.getSeconds()
-
-    month = month > 9 ? month : '0' + month
-    day = day > 9 ? day : '0' + day
-    hour = hour > 9 ? hour : '0' + hour
-    minute = minute > 9 ? minute : '0' + minute
-    second = second > 9 ? second : '0' + second
-
-    return [year, month, day].join('-') + ' ' + [hour, minute, second].join(':')
-}
-
-let logger = (log, type) => {
-    type = type || 'I'
-    console.log(timestamp() + '  ' + type + '    ' + log)
-}
+let {logger, timestamp} = require('./src/utils')
 
 server.listen(9090, () => {
     logger('Listening on port *:9090')
 })
+
+app.use(express.static('public'))
+require('./src/routes')(app)
 
 let chatRooms = {}
 
