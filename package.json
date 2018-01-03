@@ -8,8 +8,8 @@
     "dev": "node_modules/.bin/nodemon .",
     "test": "node_modules/.bin/mocha"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Rifa'i M. Hanif",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.16.2",
     "jimp": "^0.2.28",

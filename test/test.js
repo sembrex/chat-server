@@ -1,7 +1,7 @@
 let assert = require('assert')
 let expect = require('chai').expect
 let knex = require('knex')(require('../knexfile'))
-let utils = require('../src/utils')
+let utils = require('../app/utils')
 
 describe('User', () => {
     it('should return user with avatar path', done => {

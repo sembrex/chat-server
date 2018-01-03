@@ -3,14 +3,14 @@ let app = express()
 let server = require('http').createServer(app)
 let io = require('socket.io')(server)
 
-let {logger, timestamp} = require('./src/utils')
+let {logger, timestamp} = require('./app/utils')
 
 server.listen(9090, () => {
     logger('Listening on port *:9090')
 })
 
 app.use(express.static('public'))
-require('./src/routes')(app)
+require('./app/routes')(app)
 
 let chatRooms = {}
 
