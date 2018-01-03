@@ -9,16 +9,15 @@ module.exports = class User {
     }
 
     constructor(data, callback) {
-        for (let key in data) {
+        for (let key in data)
             this[key] = data[key]
-        }
 
         if (this.avatar_id) {
-            return knex.first('path')
-                .from('file_managers')
+            return knex('file_managers')
+                .first('path')
                 .where('id', this.avatar_id)
-                .then((row) => {
-                    this.avatar = row.path
+                .then((avatar) => {
+                    this.avatar = avatar.path
                     if (typeof callback == 'function')
                         callback(this)
 
@@ -30,12 +29,30 @@ module.exports = class User {
             callback(this)
     }
 
-    static get() {
-        return knex.select(...arguments)
-                .table(this.table)
-                .map(data => {
-                    return new this(data)
-                })
+    static get(columns, callback) {
+        knex(this.table)
+            .select(...columns || [])
+            .map(data => {
+                return new User(data)
+            })
+            .asCallback((err, users) => {
+                if (typeof callback == 'function')
+                    callback(users, err)
+            })
+    }
+
+    static find(id, callback) {
+        knex(this.table)
+            .first()
+            .where('id', id)
+            .then(user => {
+                new User(user, callback)
+            })
+            .catch(err => {
+                utils.logger(err, 'E')
+                if (typeof callback == 'function')
+                    callback(null, err)
+            })
     }
 
     static create(data, callback) {
@@ -46,60 +63,151 @@ module.exports = class User {
 
         knex.transaction(trx => {
             let createUser = data => {
-                knex(this.table).insert(data)
-                    .transacting(trx)
-                    .asCallback((err) => {
-                        if (err) {
-                            utils.logger(err, 'E')
-                            trx.rollback()
-                            return callback(err)
-                        }
-
-                        trx.commit()
-                        new this(data, user => {
-                            callback(err, user)
-                        })
-                    })
+                return trx.insert(data)
+                    .into(this.table)
             }
 
             if (data.avatar) {
-                let file = data.avatar
-
-                Jimp.read(file.buffer).then(img => {
-                    if (img.bitmap.width >= img.bitmap.height) {
-                        img.resize(Jimp.AUTO, 250)
-                        let x = Math.round((img.bitmap.width - 250) / 2)
-                        img.crop(x, 0, 250, 250)
-                    } else {
-                        img.resize(250, Jimp.AUTO)
-                        let y = Math.round((img.bitmap.height - 250) / 2)
-                        img.crop(0, y, 250, 250)
+                return this.processAvatar(data.avatar, data.username, (avatar, err) => {
+                    if (err) {
+                        utils.logger(err, 'E')
+                        return createUser(user)
                     }
 
-                    let img_path = 'images/avatar/' + user.username + '.' + img.getExtension()
-                    let save_path = utils.public_path(img_path)
-                    if (fs.existsSync(save_path))
-                        fs.unlinkSync(save_path)
-                    img.write(save_path)
-
-                    knex('file_managers')
-                        .transacting(trx)
-                        .returning('id')
-                        .insert({
-                            mime: file.mimetype,
-                            path: '/' + img_path
+                    return trx.insert(avatar, 'id')
+                        .into('file_managers')
+                        .then((ids) => {
+                            user.avatar_id = ids[0]
+                            return createUser(user)
                         })
-                        .asCallback((err, ids) => {
-                            if (!err)
-                                user.avatar_id = ids[0]
-                            createUser(user)
+                        .catch(() => {
+                            return createUser(user)
                         })
-                }).catch(err => {
-                    createUser(user)
                 })
-            } else {
-                createUser(user)
+            } else
+                return createUser(user)
+        })
+        .then(() => {
+            new User(user, callback)
+        })
+        .catch(err => {
+            if (typeof callback == 'function')
+                callback(null, err)
+        })
+    }
+
+    update(data, callback) {
+        let user = {
+            username: this.username
+        }
+
+        for (let key in data) {
+            if (key != 'avatar')
+                user[key] = data[key]
+        }
+
+        knex.transaction(trx => {
+            let updateUser = data => {
+                return trx(User.table)
+                    .update(data)
+                    .where('id', this.id)
             }
+
+            if (data.avatar) {
+                return User.processAvatar(data.avatar, this.username, (avatar, err) => {
+                    if (err) {
+                        utils.logger(err, 'E')
+                        return updateUser(user)
+                    }
+
+                    if (this.avatar_id) {
+                        return trx('file_managers')
+                            .update(avatar)
+                            .where('id', this.avatar_id)
+                            .then(() => {
+                                this.avatar = avatar.path
+                                return updateUser(user)
+                            })
+                            .catch(err => {
+                                return updateUser(user)
+                            })
+                    } else {
+                        return trx.insert(avatar, 'id')
+                            .into('file_managers')
+                            .then((ids) => {
+                                user.avatar_id = ids[0]
+                                this.avatar_id = ids[0]
+                                this.avatar = avatar.path
+                                return updateUser(user)
+                            })
+                            .catch(err => {
+                                return updateUser(user)
+                            })
+                    }
+                })
+            } else
+                return updateUser(user)
+        })
+        .asCallback((err) => {
+            if (!err) {
+                for (let key in user)
+                    this[key] = user[key]
+            }
+
+            if (typeof callback == 'function')
+                callback(err)
+        })
+    }
+
+    delete(callback) {
+        knex.transaction(trx => {
+            return trx.delete()
+                .from(User.table)
+                .where('id', this.id)
+                .then(() => {
+                    if (this.avatar_id && this.avatar) {
+                        return trx.delete()
+                            .from('file_managers')
+                            .where('id', this.avatar_id)
+                            .then(() => {
+                                fs.unlinkSync(utils.public_path(this.avatar.substring(1)))
+                            })
+                    }
+                })
+        })
+        .asCallback(err => {
+            if (typeof callback == 'function')
+                callback(err)
+        })
+    }
+
+    static processAvatar(file, username, callback) {
+        return Jimp.read(file.buffer).then(img => {
+            if (img.bitmap.width >= img.bitmap.height) {
+                img.resize(Jimp.AUTO, 250)
+                let x = Math.round((img.bitmap.width - 250) / 2)
+                img.crop(x, 0, 250, 250)
+            } else {
+                img.resize(250, Jimp.AUTO)
+                let y = Math.round((img.bitmap.height - 250) / 2)
+                img.crop(0, y, 250, 250)
+            }
+
+            let img_path = 'images/avatar/' + username + '.' + img.getExtension()
+            let save_path = utils.public_path(img_path)
+            if (fs.existsSync(save_path))
+                fs.unlinkSync(save_path)
+            img.write(save_path)
+
+            if (typeof callback == 'function') {
+                return callback({
+                    mime: file.mimetype,
+                    path: '/' + img_path
+                })
+            }
+        }).catch(err => {
+            if (typeof callback == 'function')
+                return callback(null, err)
         })
     }
 }

@@ -1,7 +1,5 @@
 const knex = require('knex')(require('../../knexfile'))
 let utils = require('../utils')
-let Jimp = require('jimp')
-let fs = require('fs')
 let User = require('../models/User')
 
 let validate = (params, rules) => {
@@ -36,10 +34,6 @@ let validate = (params, rules) => {
     return errors
 }
 
-let createOrUpdateUser = (data, callback, err_callback) => {
-
-}
-
 module.exports = {
     store(req, res, next) {
         if (req.method != 'POST')
@@ -50,9 +44,8 @@ module.exports = {
             password: 'required',
         })
 
-        if (Object.keys(errors).length) {
+        if (Object.keys(errors).length)
             return res.status(422).json(errors)
-        }
 
         let data = {
             username: req.body.username,
@@ -61,13 +54,12 @@ module.exports = {
 
         if (req.files) {
             req.files.forEach(file => {
-                if (file.fieldname == 'avatar') {
+                if (file.fieldname == 'avatar')
                     data.avatar = file
-                }
             })
         }
 
-        User.create(data, (err, user) => {
+        User.create(data, (user, err) => {
             if (err)
                 return res.status(500).json(err)
 
@@ -78,22 +70,74 @@ module.exports = {
         if (['PUT', 'PATCH'].indexOf(req.method) == -1)
             return next()
 
-        res.send('User put patch')
+        let errors = validate(req.body, {
+            id: 'required',
+        })
+
+        if (Object.keys(errors).length)
+            return res.status(422).json(errors)
+
+        utis.logger('bocor')
+
+        User.find(req.body.id, (user, err) => {
+            if (err)
+                return res.status(500).json(err)
+
+            let data = {}
+
+            if (req.body.username)
+                data.username = req.body.username
+
+            if (req.body.password)
+                data.password = utils.Hash.make(req.body.password)
+
+            if (req.files) {
+                req.files.forEach(file => {
+                    if (file.fieldname == 'avatar')
+                        data.avatar = file
+                })
+            }
+
+            if (Object.keys(data).length < 1)
+                return res.status(422).json('Invalid data.')
+
+            user.update(data, (err) => {
+                if (err)
+                    return res.status(500).json(err)
+
+                return res.json(user)
+            })
+        })
     },
     destroy(req, res, next) {
         if (req.method != 'DELETE')
             return next()
 
-        res.send('User delete')
+        let errors = validate(req.body, {
+            id: 'required',
+        })
+
+        if (Object.keys(errors).length)
+            return res.status(422).json(errors)
+
+        User.find(req.body.id, (user, err) => {
+            if (err)
+                return res.status(500).json(err)
+
+            user.delete((err) => {
+                if (err)
+                    return res.status(500).json(err)
+
+                return res.json('deleted')
+            })
+        })
     },
     index(req, res) {
-        User.get()
-            .then(users => {
-                utils.logger(users)
-                res.json(users)
-            })
-            .catch(err => {
-                res.json(err)
-            })
+        User.get(null, (users, err) => {
+            if (err)
+                return res.status(500).json(err)
+
+            return res.json(users)
+        })
     }
 }
