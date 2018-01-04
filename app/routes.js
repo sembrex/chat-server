@@ -1,7 +1,7 @@
 let bodyParser = require('body-parser')
 let upload = require('multer')()
 let session = require('express-session')
-let FileStore = require('session-file-store')(session);
+let MySQLStore = require('express-mysql-session')(session)
 let web = require('./middlewares/web_middleware')
 let auth = require('./middlewares/auth_middleware')
 
@@ -9,8 +9,9 @@ module.exports = app => {
     app.use(bodyParser.json())
     app.use(bodyParser.urlencoded({ extended: true }))
     app.use(session({
-        store: new FileStore(),
+        key: 'chat_server',
         secret: 'Hello World!',
+        store: new MySQLStore(require('../knexfile').connection),
         resave: true,
         saveUninitialized: true,
     }))
