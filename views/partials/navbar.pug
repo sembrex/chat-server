@@ -1,0 +1,13 @@
+nav.navbar.navbar-expand-lg.navbar-dark.bg-primary
+    a.navbar-brand(href='/') #{app_name}
+    button.navbar-toggler(type='button' data-toggle='collapse' data-target='#navbarSupportedContent' aria-controls='navbarSupportedContent' aria-expanded='false' aria-label='Toggle navigation')
+        span.navbar-toggler-icon
+    #navbarSupportedContent.collapse.navbar-collapse
+        ul.navbar-nav.mr-auto
+            li.nav-item(class=route == 'home' ? 'active' : ''): a.nav-link(href='/') Home
+            if user
+                li.nav-item(class=route == 'profile' ? 'active' : ''): a.nav-link(href='/profile') Profile
+                li.nav-item: a.nav-link(href='/logout') Logout
+            else
+                li.nav-item(class=route == 'login' ? 'active' : ''): a.nav-link(href='/login') Login
+                li.nav-item(class=route == 'register' ? 'active' : ''): a.nav-link(href='/register') Register

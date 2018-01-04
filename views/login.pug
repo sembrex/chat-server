@@ -1,0 +1,53 @@
+extends ./layouts/app.pug
+
+block content
+    .container.mt-4: .row: .col-sm-6.mx-auto
+        form#login-form(action='/login' method='POST')
+            .card: .card-body
+                h5.card-title Login
+                p.card-text
+                    .form-group
+                        label Username
+                        input.form-control.input-sm(name='username' type='text')
+                    .form-group
+                        label Password
+                        input.form-control.input-sm(name='password' type='password')
+                .text-right
+                    button#btn-submit.btn.btn-primary(type='submit')
+                        i.fa.fa-sign-in.mr-2
+                        | Login
+
+append scripts
+    script(type='text/javascript').
+        $('#login-form').submit(function(e) {
+            e.preventDefault();
+
+            $('#btn-submit').html('<i class="fa fa-sun-o fa-spin mr-2"></i> Loading...').attr('disabled', true);
+
+            var url = $(this).prop('action'),
+                data = $(this).serialize();
+
+            $.post(url, data)
+            .then(function(res) {
+                window.location.href = '/profile';
+            })
+            .catch(function(err) {
+                console.error(err);
+                var message = '';
+
+                if (err.status === 422 && typeof err.responseJSON === 'object') {
+                    $.each(err.responseJSON, function(field, errors) {
+                        errors.forEach(function(error) {
+                            message += '<p>' + error + '</p>';
+                        });
+                    });
+                } else {
+                    message = err.statusText;
+                }
+
+                alert(message);
+            })
+            .always(function() {
+                $('#btn-submit').html('<i class="fa fa-sign-in mr-2"></i> Login').attr('disabled', false);
+            });
+        });

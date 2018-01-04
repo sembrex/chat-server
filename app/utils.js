@@ -34,7 +34,7 @@ let logger = (log, type) => {
         cons(info + '    ' + log)
         data = Buffer.from(info + '    ' + log + '\n')
     }
-    let log_path = __dirname + '/storage/logs/' + timestamp(null, true) + '.log'
+    let log_path = path.resolve(__dirname + '/../storage/logs/' + timestamp(null, true) + '.log')
     if (fs.existsSync(log_path))
         fs.appendFileSync(log_path, data)
     else
@@ -52,6 +52,46 @@ let Hash = {
     }
 }
 
+let validate = (params, rules) => {
+    let errors = {}
+
+    let addError = (field, error) => {
+        if (errors[field])
+            errors[field].push(error)
+        else
+            errors[field] = [error]
+    }
+
+    for (let field in rules) {
+        let field_rules = rules[field].split('|')
+        for (let i in field_rules) {
+            let [k, v] = field_rules[i].split(':')
+            switch (k) {
+                case 'required':
+                    if (!params[field] || !params[field].length)
+                        addError(field, field + ' is required.')
+                    break
+                case 'confirmed':
+                    if (params[field] != params[field + '_confirmation'])
+                        addError(field, field + ' confirmation mismatch.')
+                    break
+                case 'min':
+                    if (v && params[field] && params[field].length < parseInt(v))
+                        addError(field, field + ' minimum ' + v)
+                    break
+                case 'max':
+                    if (v && params[field] && params[field].length > parseInt(v))
+                        addError(field, field + ' maximum ' + v)
+                    break
+                default:
+                break
+            }
+        }
+    }
+
+    return errors
+}
+
 let public_path = subpath => {
     return path.resolve(__dirname, '../public/', (subpath || ''))
 }
@@ -60,5 +100,6 @@ module.exports = {
     timestamp,
     logger,
     Hash,
+    validate,
     public_path,
 }

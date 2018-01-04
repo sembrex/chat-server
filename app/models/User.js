@@ -1,5 +1,5 @@
 let knex = require('knex')(require('../../knexfile'))
-let {logger, public_path} = require('../utils')
+let {logger, public_path, Hash} = require('../utils')
 let Jimp = require('jimp')
 let fs = require('fs')
 
@@ -179,6 +179,24 @@ module.exports = class User {
             if (typeof callback == 'function')
                 callback(err)
         })
+    }
+
+    static authenticate(data, callback) {
+        knex(this.table)
+            .first()
+            .where('username', data.username)
+            .then(user => {
+                if (user && Hash.check(data.password, user.password))
+                    new User(user, callback)
+                else if(typeof callback == 'function') {
+                    callback(null, 'Invalid credentials.')
+                }
+            })
+            .catch(err => {
+                logger(err, 'E')
+                if (typeof callback == 'function')
+                    callback(null, err)
+            })
     }
 
     static processAvatar(file, username, callback) {

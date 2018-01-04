@@ -1,0 +1,9 @@
+extends ./layouts/app.pug
+
+block content
+    .container.mt-4: .row: .col-sm-4.mx-auto
+        .card
+            img.card-img-top(src=user.avatar ? user.avatar : '/images/default-avatar.png')
+            hr
+            .card-body
+                h5.card-title #{user.username}

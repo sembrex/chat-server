@@ -1,0 +1,96 @@
+extends ./layouts/app.pug
+
+block content
+    .container.mt-4: .row: .col-sm-6.mx-auto
+        form#register-form(action='/register' method='POST' enctype='multipart/form-data')
+            .card: .card-body
+                h5.card-title Register
+                p.card-text
+                    .form-group
+                        label Username
+                        input.form-control.input-sm(name='username' type='text')
+                    .form-group
+                        label Password
+                        input.form-control.input-sm(name='password' type='password')
+                    .form-group
+                        label Password Confirmation
+                        input.form-control.input-sm(name='password_confirmation' type='password')
+                    .form-group.text-center
+                        label(for='avatar' style='cursor:pointer;')
+                            input#avatar.position-absolute(name='avatar' type='file' style='opacity:0;')
+                            img#avatar-preview.img-thumbnail(src='/images/default-avatar.png', style='max-width:250px;max-height:250px;')
+                .text-right
+                    button#btn-submit.btn.btn-primary(type='submit')
+                        i.fa.fa-sign-in.mr-2
+                        | Register
+
+append scripts
+    script(type='text/javascript').
+        $('#avatar').change(function() {
+            if (this.files.length) {
+                var file = this.files[0];
+
+                if (file.type.indexOf('image') == -1) {
+                    alert('Invalid image!');
+                    return;
+                }
+
+                if (file.size > 2100000) {
+                    alert('Image size too large!');
+                    return;
+                }
+
+                var reader = new FileReader();
+
+                reader.onload = function(e) {
+                    $('#avatar-preview').attr('src', e.target.result);
+                };
+
+                reader.readAsDataURL(file);
+            }
+        });
+
+        $('#register-form').submit(function(e) {
+            e.preventDefault();
+
+            $('#btn-submit').html('<i class="fa fa-sun-o fa-spin mr-2"></i> Loading...').attr('disabled', true);
+
+            var url = $(this).prop('action'),
+                data = new FormData(this),
+                contentType = $(this).attr('enctype');
+
+            $.ajax({
+                url: url,
+                data: data,
+                method: 'POST',
+                cache: false,
+                processData: false,
+                contentType: false,
+            })
+            .then(function(res) {
+                console.log(res);
+                if (res.message)
+                    alert(res.message);
+
+                window.location.href = '/login';
+            })
+            .catch(function(err) {
+                console.error(err);
+                var message = '';
+
+                if (err.status === 422 && typeof err.responseJSON === 'object') {
+                    $.each(err.responseJSON, function(field, errors) {
+                        errors.forEach(function(error) {
+                            message += '<p>' + error + '</p>';
+                        });
+                    });
+                } else {
+                    message = err.statusText;
+                }
+
+                alert(message);
+            })
+            .always(function() {
+                $('#btn-submit').html('<i class="fa fa-sign-in mr-2"></i> Register').attr('disabled', false);
+            });
+        });

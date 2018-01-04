@@ -1,7 +1,9 @@
-doctype html
-html(lang='en')
-    head
-        title #{title}
-        style
-    body
-        h1 Hello World!
+extends ./layouts/app.pug
+
+block content
+    .container.mt-4: .row: .col
+        .jumbotron.text-center
+            h1.display-4 Hello World!
+            p.lead Lorem ipsum dolor sit amet, consectetur adipisicing elit. Assumenda sunt, quia modi nisi asperiores? Sequi sint officia exercitationem deleniti, enim eveniet consequuntur consequatur numquam temporibus, reiciendis dicta eius vel rerum.
+            hr.my-4
+            p.lead: a.btn.btn-primary.btn-lg(href='#') Get Started

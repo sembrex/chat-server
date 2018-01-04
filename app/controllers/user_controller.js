@@ -1,38 +1,5 @@
-const knex = require('knex')(require('../../knexfile'))
-let {logger, Hash} = require('../utils')
+let {logger, Hash, validate} = require('../utils')
 let User = require('../models/User')
-
-let validate = (params, rules) => {
-    let errors = {}
-
-    let addError = (field, error) => {
-        if (errors[field])
-            errors[field].push(error)
-        else
-            errors[field] = [error]
-    }
-
-    for (let field in rules) {
-        let field_rules = rules[field].split('|')
-        for (let i in field_rules) {
-            let [k, v] = field_rules[i].split(':')
-            switch (k) {
-                case 'required':
-                    if (!params[field] || !params[field].length)
-                        addError(field, field + ' is required.')
-                    break
-                case 'max':
-                    if (v && params[field] && params[field].length > parseInt(v))
-                        addError(field, field + ' maximum ' + v)
-                    break
-                default:
-                break
-            }
-        }
-    }
-
-    return errors
-}
 
 module.exports = {
     store(req, res, next) {
@@ -76,8 +43,6 @@ module.exports = {
 
         if (Object.keys(errors).length)
             return res.status(422).json(errors)
-
-        utis.logger('bocor')
 
         User.find(req.body.id, (user, err) => {
             if (err)
